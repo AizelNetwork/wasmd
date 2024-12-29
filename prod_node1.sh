@@ -2,7 +2,7 @@
 
 CHAINID="${CHAIN_ID:-wasmd-20151225}"
 BASE_DENOM="stake"
-MONIKER="node1"
+MONIKER="wasm-node1"
 # Remember to change to other types of keyring like 'file' in-case exposing to outside world,
 # otherwise your balance will be wiped quickly
 # The keyring test does not require private key to steal tokens from you
@@ -20,6 +20,7 @@ BASEFEE=1000000000
 # Path variables
 CONFIG=$HOMEDIR/config/config.toml
 APP_TOML=$HOMEDIR/config/app.toml
+CLIENT_TOML=$HOMEDIR/config/client.toml  # <-- We'll need this to modify client.toml
 GENESIS=$HOMEDIR/config/genesis.json
 TMP_GENESIS=$HOMEDIR/config/tmp_genesis.json
 
@@ -163,6 +164,27 @@ EOF
 		grep -q -F '[memiavl]' "$APP_TOML" && sed -i '' '/\[memiavl\]/,/^\[/ s/enable = true/enable = false/' "$APP_TOML"
 		# Don't enable versionDB by default
 		grep -q -F '[versiondb]' "$APP_TOML" && sed -i '' '/\[versiondb\]/,/^\[/ s/enable = true/enable = false/' "$APP_TOML"
+		
+		#
+		# CHANGED: Below are your requested modifications for app.toml, client.toml, and config.toml
+		#
+		# 1. app.toml
+		sed -i '' 's|^address = "tcp://localhost:1317"|address = "tcp://0.0.0.0:2317"|' "$APP_TOML"        # [api] -> address
+		sed -i '' 's|^enabled-unsafe-cors = false|enabled-unsafe-cors = true|' "$APP_TOML"              # [api] -> enabled-unsafe-cors
+		sed -i '' 's|^address = "localhost:9090"|address = "0.0.0.0:10090"|' "$APP_TOML"                # [grpc] -> address
+
+		# 2. client.toml
+		sed -i '' 's|^node = "tcp://localhost:26657"|node = "tcp://0.0.0.0:36657"|' "$CLIENT_TOML"       # node
+
+		# 3. config.toml
+		sed -i '' 's|^proxy_app = "tcp://127.0.0.1:26658"|proxy_app = "tcp://0.0.0.0:36658"|' "$CONFIG"   # proxy_app
+		sed -i '' 's|^laddr = "tcp://127.0.0.1:26657"|laddr = "tcp://0.0.0.0:36657"|' "$CONFIG"           # laddr (RPC)
+		sed -i '' 's|^cors_allowed_origins = \[\]|cors_allowed_origins = \["*"\]|' "$CONFIG"             # cors_allowed_origins
+		sed -i '' 's|^pprof_laddr = "localhost:6060"|pprof_laddr = "0.0.0.0:7060"|' "$CONFIG"             # pprof_laddr
+		# Notice we have two "laddr" fields in config.toml; the second is for P2P:
+		sed -i '' 's|^laddr = "tcp://0.0.0.0:26656"|laddr = "tcp://0.0.0.0:36656"|' "$CONFIG"             # laddr (P2P)
+		sed -i '' 's|^prometheus_listen_addr = ":26660"|prometheus_listen_addr = ":36660"|' "$CONFIG"     # prometheus_listen_addr
+
 	else
 		sed -i 's/prometheus = false/prometheus = true/' "$CONFIG"
 		sed -i 's/prometheus-retention-time  = "0"/prometheus-retention-time  = "1000000000000"/g' "$APP_TOML"
@@ -174,6 +196,26 @@ EOF
 		grep -q -F '[memiavl]' "$APP_TOML" && sed -i '/\[memiavl\]/,/^\[/ s/enable = true/enable = false/' "$APP_TOML"
 		# Don't enable versionDB by default
 		grep -q -F '[versiondb]' "$APP_TOML" && sed -i '/\[versiondb\]/,/^\[/ s/enable = true/enable = false/' "$APP_TOML"
+
+		#
+		# CHANGED: Below are your requested modifications for app.toml, client.toml, and config.toml
+		#
+		# 1. app.toml
+		sed -i 's|^address = "tcp://localhost:1317"|address = "tcp://0.0.0.0:2317"|' "$APP_TOML"        # [api] -> address
+		sed -i 's|^enabled-unsafe-cors = false|enabled-unsafe-cors = true|' "$APP_TOML"              # [api] -> enabled-unsafe-cors
+		sed -i 's|^address = "localhost:9090"|address = "0.0.0.0:10090"|' "$APP_TOML"                # [grpc] -> address
+
+		# 2. client.toml
+		sed -i 's|^node = "tcp://localhost:26657"|node = "tcp://0.0.0.0:36657"|' "$CLIENT_TOML"       # node
+
+		# 3. config.toml
+		sed -i 's|^proxy_app = "tcp://127.0.0.1:26658"|proxy_app = "tcp://0.0.0.0:36658"|' "$CONFIG"   # proxy_app
+		sed -i 's|^laddr = "tcp://127.0.0.1:26657"|laddr = "tcp://0.0.0.0:36657"|' "$CONFIG"           # laddr (RPC)
+		sed -i 's|^cors_allowed_origins = \[\]|cors_allowed_origins = \["*"\]|' "$CONFIG"             # cors_allowed_origins
+		sed -i 's|^pprof_laddr = "localhost:6060"|pprof_laddr = "0.0.0.0:7060"|' "$CONFIG"             # pprof_laddr
+		# Notice we have two "laddr" fields in config.toml; the second is for P2P:
+		sed -i 's|^laddr = "tcp://0.0.0.0:26656"|laddr = "tcp://0.0.0.0:36656"|' "$CONFIG"             # laddr (P2P)
+		sed -i 's|^prometheus_listen_addr = ":26660"|prometheus_listen_addr = ":36660"|' "$CONFIG"     # prometheus_listen_addr
 	fi
 
 	# Change proposal periods to pass within a reasonable time for local testing
